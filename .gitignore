@@ -24,4 +24,34 @@ __pycache__/
 Thumbs.db
 
 # Streamlit
-.streamlit/ 
+.streamlit/
+
+# Shodan response data (large files)
+src/data/shodan/samples/*.txt
+src/data/shodan/samples/*.json
+
+# Secrets files
+.streamlit/secrets.toml
+src/.streamlit/secrets.toml
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables
+.env
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Logs
+logs/
+*.log
+
+# Local development files
+.idea/
+.vscode/
+.DS_Store 

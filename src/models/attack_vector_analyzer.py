@@ -10,7 +10,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 # Use absolute import
-from src.utils.ai_utils import generate_attack_vector_with_ai, rule_based_attack_vector
+from src.utils.ai_utils import generate_attack_vector_with_ai, rule_based_attack_vector, OPENAI_AVAILABLE
 
 class AttackVectorAnalyzer:
     """
@@ -25,10 +25,12 @@ class AttackVectorAnalyzer:
             devices: List of IoT devices with vulnerability information
         """
         self.devices = devices or []
+        print(f"[ANALYZER] Initialized with {len(self.devices)} devices")
         
     def set_devices(self, devices: List[Dict[str, Any]]):
         """Set the devices to analyze."""
         self.devices = devices
+        print(f"[ANALYZER] Updated devices, now has {len(self.devices)} devices")
         
     def analyze(self, use_ai: bool = True) -> Dict[str, Any]:
         """
@@ -40,7 +42,10 @@ class AttackVectorAnalyzer:
         Returns:
             Dict containing analysis results
         """
+        print(f"[ANALYZER] Starting analysis with use_ai={use_ai}, OPENAI_AVAILABLE={OPENAI_AVAILABLE}")
+        
         if not self.devices:
+            print("[ANALYZER] No devices available for analysis")
             return {
                 "success": False,
                 "error": "No devices available for analysis",
@@ -48,11 +53,14 @@ class AttackVectorAnalyzer:
             }
         
         try:
-            if use_ai and os.getenv("OPENAI_API_KEY"):
+            # In simulation mode, we'll use the use_ai flag directly without checking the API key
+            if use_ai and OPENAI_AVAILABLE:
                 # Use AI-powered analysis
+                print("[ANALYZER] Using AI-powered analysis")
                 attack_vector = generate_attack_vector_with_ai(self.devices)
             else:
                 # Use rule-based analysis as fallback
+                print("[ANALYZER] Using rule-based analysis")
                 attack_vector = rule_based_attack_vector(self.devices)
                 
             # Calculate risk score based on device vulnerabilities
@@ -60,6 +68,7 @@ class AttackVectorAnalyzer:
             high_vuln_count = sum(1 for d in self.devices if d.get("vuln_score", 0) >= 7)
             
             risk_score = min(10, (avg_vuln_score * 0.7) + (high_vuln_count * 0.3 * 2))
+            print(f"[ANALYZER] Analysis complete: risk_score={risk_score}, high_vuln_count={high_vuln_count}")
             
             return {
                 "success": True,
@@ -70,6 +79,7 @@ class AttackVectorAnalyzer:
             }
             
         except Exception as e:
+            print(f"[ANALYZER] Error during analysis: {str(e)}")
             return {
                 "success": False,
                 "error": str(e),
@@ -85,4 +95,5 @@ class AttackVectorAnalyzer:
         with open(output_path, "w") as f:
             json.dump(analysis_result, f, indent=2)
             
+        print(f"[ANALYZER] Analysis saved to {output_path}")
         return output_path 

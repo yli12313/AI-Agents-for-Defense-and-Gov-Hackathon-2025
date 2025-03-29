@@ -1,1 +1,1 @@
-web: streamlit run src/app.py 
+web: cd src && streamlit run integrated_app.py 

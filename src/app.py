@@ -1,184 +1,139 @@
 import streamlit as st
 import json
-from pathlib import Path
-import folium
-from streamlit_folium import folium_static
-import numpy as np
 import os
-import sys
+import pandas as pd
+from pathlib import Path
 
-# Add the current directory to the Python path to make imports work
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__) + '/..'))
+# Import our utility functions
+from query_generator import city_to_coordinates, generate_shodan_query
+from vulnerability_analyzer import analyze_vulnerabilities, get_mitigation_recommendations
 
-from src.models.attack_vector_analyzer import AttackVectorAnalyzer
-
-# Set page config
+# Set page title and configuration
 st.set_page_config(
-    page_title="Maritime Port Digital Twin",
-    page_icon="🚢",
+    page_title="Port City Vulnerability Scanner",
+    page_icon="🔍",
     layout="wide"
 )
 
-# Set a default OpenAI API key for demonstration
-# In production, this should be set via environment variables
-if "OPENAI_API_KEY" not in os.environ:
-    # Try to get from secrets, but handle the case when no secrets file exists
-    try:
-        os.environ["OPENAI_API_KEY"] = st.secrets.get("OPENAI_API_KEY", "")
-    except Exception:
-        os.environ["OPENAI_API_KEY"] = ""  # Set to empty string if no secrets found
+st.title("Port City Vulnerability Scanner")
+st.markdown("Search for potentially vulnerable Industrial Control Systems (ICS) in port cities worldwide.")
 
-def load_dummy_data():
-    """Load dummy IoT device data from JSON file."""
-    data_path = Path("src/data/dummy_data.json")
-    if data_path.exists():
-        with open(data_path, "r") as f:
-            return json.load(f)
-    return []
+# Create a two-column layout
+col1, col2 = st.columns([1, 2])
 
-def calculate_rag_status(vuln_score):
-    """Calculate RAG (Red-Amber-Green) status based on vulnerability score."""
-    if vuln_score >= 7:
-        return "RED"
-    elif vuln_score >= 4:
-        return "AMBER"
-    return "GREEN"
+# Input form in the first column
+with col1:
+    st.subheader("Search Parameters")
+    with st.form("search_form"):
+        city_name = st.text_input("Enter Port City Name:", "Vladivostok")
+        search_term = st.text_input("Search Term:", "ICS")
+        radius = st.slider("Search Radius (km):", 1, 20, 5)
+        submitted = st.form_submit_button("Search")
 
-def get_status_color(status):
-    """Get color based on RAG status."""
-    return {
-        "RED": "red",
-        "AMBER": "orange",
-        "GREEN": "green"
-    }.get(status, "blue")
-
-def create_port_map(devices):
-    """Create folium map with IoT devices."""
-    # Create a map centered on an example maritime port
-    # San Diego port coordinates as an example
-    m = folium.Map(location=[32.7157, -117.1611], zoom_start=15)
-    
-    # Add background satellite imagery
-    folium.TileLayer(
-        tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        attr='Esri',
-        name='Satellite',
-        overlay=False,
-        control=True
-    ).add_to(m)
-    
-    # Plot devices on the map
-    for device in devices:
-        # Normalize coordinates to map view (dummy data uses 0-1 range)
-        # In real implementation, use actual lat/long
-        norm_lat = 32.7157 + (device["location"][1] - 0.5) * 0.01
-        norm_lng = -117.1611 + (device["location"][0] - 0.5) * 0.01
+# Display results in the second column
+with col2:
+    # When form is submitted
+    if submitted:
+        # Generate the query
+        query, coords = generate_shodan_query(city_name, search_term, radius)
         
-        status = calculate_rag_status(device.get("vuln_score", 0))
-        color = get_status_color(status)
-        
-        # Add marker for each device
-        folium.Marker(
-            [norm_lat, norm_lng],
-            popup=f"""
-            <b>{device.get('name', 'Unknown')}</b><br>
-            Type: {device.get('device_type', 'Unknown')}<br>
-            Vulnerability Score: {device.get('vuln_score', 0)}<br>
-            Status: {status}
-            """,
-            tooltip=device.get("name", "Device"),
-            icon=folium.Icon(color=color, icon="server", prefix="fa")
-        ).add_to(m)
-    
-    return m
-
-def main():
-    st.title("Maritime Port Digital Twin")
-    
-    # Load dummy data
-    devices = load_dummy_data()
-    
-    # Initialize the attack vector analyzer
-    analyzer = AttackVectorAnalyzer(devices)
-    
-    # Create two columns for layout
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.subheader("Port Map")
-        if devices:
-            port_map = create_port_map(devices)
-            folium_static(port_map, width=800)
+        if not coords:
+            st.error(query)  # Display error message
         else:
-            st.info("No device data available for map visualization")
-        
-        # Advanced Attack vector analysis section
-        st.subheader("AI-Enhanced Attack Vector Analysis")
-        
-        use_ai = st.checkbox("Use AI for enhanced analysis", value=True)
-        
-        if st.button("Generate Attack Vector Analysis"):
-            with st.spinner("Analyzing potential attack vectors..."):
-                # Check if OpenAI API key is available
-                if use_ai and not os.environ.get("OPENAI_API_KEY"):
-                    st.warning("No OpenAI API key found. Using rule-based analysis instead.")
-                    use_ai = False
+            # Display the query that would be sent to Shodan
+            st.subheader("Generated Shodan Query:")
+            st.code(query)
+            
+            # Display a map with the coordinates
+            st.subheader("Search Location:")
+            map_data = pd.DataFrame({
+                "lat": [coords["lat"]],
+                "lon": [coords["lon"]]
+            })
+            st.map(map_data)
+            
+            # In a real implementation, this would call the Shodan API
+            # For our simulation, load the sample JSON
+            st.subheader("Simulation Results:")
+            
+            # Load sample data - find the correct path
+            current_dir = Path(__file__).parent
+            sample_path = current_dir / "data" / "shodan" / "samples" / "clean_sample.json"
+            
+            try:
+                with open(sample_path, "r") as f:
+                    sample_data = json.load(f)
                 
-                # Perform the analysis
-                analysis_result = analyzer.analyze(use_ai=use_ai)
+                # Run vulnerability analysis
+                analysis = analyze_vulnerabilities(sample_data)
+                recommendations = get_mitigation_recommendations(analysis)
                 
-                if analysis_result["success"]:
-                    # Display risk score with gauge
-                    risk_score = analysis_result["risk_score"]
-                    st.markdown(f"### Overall Risk Score: {risk_score}/10")
-                    
-                    # Create a simple gauge visualization
-                    risk_color = "green" if risk_score < 4 else "orange" if risk_score < 7 else "red"
-                    st.progress(risk_score / 10)
-                    
-                    # Display statistics
-                    stats_col1, stats_col2 = st.columns(2)
-                    with stats_col1:
-                        st.metric("High Vulnerability Devices", analysis_result["high_vuln_count"])
-                    with stats_col2:
-                        st.metric("Average Vulnerability Score", analysis_result["avg_vuln_score"])
-                    
-                    # Display attack vector
-                    st.markdown("## Attack Vector Analysis")
-                    st.markdown(analysis_result["attack_vector"])
-                    
-                    # Option to save analysis
-                    if st.button("Save Analysis"):
-                        output_path = analyzer.save_analysis(analysis_result)
-                        st.success(f"Analysis saved to {output_path}")
-                else:
-                    st.error(f"Analysis failed: {analysis_result['error']}")
-    
-    with col2:
-        st.subheader("Device List")
-        if devices:
-            for device in devices:
-                status = calculate_rag_status(device.get("vuln_score", 0))
-                status_color = {
-                    "RED": "🔴",
-                    "AMBER": "🟡",
-                    "GREEN": "🟢"
-                }.get(status, "⚪")
+                # Display risk score with gauge
+                risk_score = analysis["risk_score"]
+                risk_level = analysis["risk_level"]
                 
-                with st.expander(f"{device.get('name', 'Unknown Device')} {status_color}"):
-                    st.markdown(f"""
-                    **Type**: {device.get('device_type', 'Unknown')}  
-                    **Vulnerability Score**: {device.get('vuln_score', 0)}  
-                    **Status**: {status}  
-                    **CVEs**: {', '.join(device.get('cves', ['None']))}
-                    """)
-        else:
-            st.warning("No device data available")
-        
-        # Simulate ship arrival
-        st.subheader("Simulate Ship Arrival")
-        if st.button("Add Ship with IoT Devices"):
-            st.info("Ship arrival simulation will be implemented by frontend team")
+                # Color based on risk level
+                color = {
+                    "HIGH": "red",
+                    "MEDIUM": "orange",
+                    "LOW": "green"
+                }.get(risk_level, "blue")
+                
+                st.markdown(f"### Risk Assessment: <span style='color:{color}'>{risk_level}</span>", unsafe_allow_html=True)
+                st.markdown(f"Risk Score: {risk_score}/10")
+                
+                # Create a progress bar for visual indication
+                st.progress(risk_score / 10)
+                
+                # Display basic info
+                st.markdown(f"**IP Address:** {sample_data['ip_str']}")
+                st.markdown(f"**Location:** {sample_data['city']}, {sample_data['country_name']}")
+                st.markdown(f"**Organization:** {sample_data['org']}")
+                
+                # Display vulnerabilities
+                if analysis["vulnerabilities"]:
+                    st.subheader("Identified Vulnerabilities:")
+                    for vuln in analysis["vulnerabilities"]:
+                        severity_color = "red" if vuln["severity"] >= 9.0 else "orange" if vuln["severity"] >= 7.0 else "green"
+                        st.markdown(f"* **{vuln['id']}** - <span style='color:{severity_color}'>{vuln['severity']}</span>/10: {vuln['description']}", unsafe_allow_html=True)
+                
+                # Display open services in a table
+                if analysis["open_services"]:
+                    st.subheader("Open Services:")
+                    service_data = []
+                    for service in analysis["open_services"]:
+                        service_data.append({
+                            "Port": service["port"],
+                            "Service": service["service"],
+                            "Product": service["product"],
+                            "Version": service["version"],
+                            "Risk Level": f"{service['risk'] * 10:.1f}/10"
+                        })
+                    
+                    st.table(pd.DataFrame(service_data))
+                
+                # Display recommendations
+                if recommendations:
+                    with st.expander("Security Recommendations", expanded=True):
+                        for rec in recommendations:
+                            if rec.startswith("CRITICAL") or rec.startswith("URGENT"):
+                                st.markdown(f"🚨 **{rec}**")
+                            elif rec.startswith("HIGH"):
+                                st.markdown(f"⚠️ **{rec}**")
+                            else:
+                                st.markdown(f"ℹ️ {rec}")
+                
+                # Display the raw JSON in an expander
+                with st.expander("Raw JSON Response", expanded=False):
+                    st.json(sample_data)
+                
+            except Exception as e:
+                st.error(f"Error processing data: {e}")
+                st.info(f"Make sure the sample data is available at: {sample_path}")
 
-if __name__ == "__main__":
-    main() 
+# Add a footer with information
+st.markdown("---")
+st.markdown("""
+**Note:** This is a simulation using sample data. In a production environment, 
+this would connect to the Shodan API to retrieve real vulnerability data.
+""") 

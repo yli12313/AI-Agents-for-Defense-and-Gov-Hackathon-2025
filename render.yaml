@@ -4,8 +4,12 @@ services:
     name: maritime-port-digital-twin
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: streamlit run src/app.py
+    startCommand: cd src && streamlit run integrated_app.py
     plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.2
+    autoDeploy: true
     healthCheckPath: /_stcore/health
     # A few useful environment variables
     envVars:

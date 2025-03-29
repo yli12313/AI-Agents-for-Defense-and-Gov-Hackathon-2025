@@ -1,8 +1,10 @@
 streamlit==1.44.0
 pandas==2.2.1
-numpy==1.26.4
 folium==0.15.1
-python-dotenv==1.0.1
-streamlit-folium==0.24.0
-pytest==8.0.2
+streamlit_folium==0.24.0
 openai==1.69.0
+python-dotenv==1.0.1
+requests==2.32.3
+toml==0.10.2
+matplotlib==3.7.3
+numpy==1.26.4
