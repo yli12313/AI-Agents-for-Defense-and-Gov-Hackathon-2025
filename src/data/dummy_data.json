@@ -1,0 +1,30 @@
+[
+    {
+        "name": "Crane_1",
+        "device_type": "PLC",
+        "location": [0.3, 0.6],
+        "vuln_score": 8.2,
+        "cves": ["CVE-2022-1234", "CVE-2023-5678"]
+    },
+    {
+        "name": "Camera_System_1",
+        "device_type": "Camera",
+        "location": [0.5, 0.4],
+        "vuln_score": 5.7,
+        "cves": ["CVE-2023-9012"]
+    },
+    {
+        "name": "Gate_Control_1",
+        "device_type": "Access Control",
+        "location": [0.2, 0.3],
+        "vuln_score": 2.1,
+        "cves": []
+    },
+    {
+        "name": "Weather_Station_1",
+        "device_type": "Sensor",
+        "location": [0.7, 0.8],
+        "vuln_score": 3.4,
+        "cves": ["CVE-2023-3456"]
+    }
+] 
