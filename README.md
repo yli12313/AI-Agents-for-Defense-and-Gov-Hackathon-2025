@@ -74,3 +74,20 @@ Next steps:
    ```bash
    git clone <repository_url>
    cd <repository_name>
+
+## Deployment
+
+### Deploy to Render
+
+1. Connect your GitHub repository to Render
+2. Create a new Web Service
+3. Use the following settings:
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `streamlit run src/app.py`
+   - Environment Variables:
+     - `PYTHON_VERSION`: 3.11
+     - `STREAMLIT_SERVER_PORT`: 8501
+     - `STREAMLIT_SERVER_HEADLESS`: true
+     - `STREAMLIT_SERVER_ENABLE_CORS`: false
+
+Alternatively, you can use the included `render.yaml` for blueprint deployment.
