@@ -1,0 +1,51 @@
+---
+
+### **Architecture Design.md**
+
+```markdown
+# Architecture Design - Maritime Port Digital Twin
+
+## System Overview:
+This system visualizes a maritime port's IoT devices, tracks their vulnerability status, and recommends attack vectors based on those vulnerabilities. The backend is responsible for processing and delivering data to the frontend, which is built with Streamlit for a real-time dashboard experience.
+
+## Components:
+1. **Frontend (Streamlit)**:
+   - Displays the map of the port.
+   - Overlays IoT devices with RAG statuses.
+   - Provides buttons to simulate ship arrivals and trigger attack vector analysis.
+
+2. **Backend (Python)**:
+   - Loads and processes IoT device data (from JSON files or Shodan API).
+   - Calculates RAG statuses based on `vuln_score`.
+   - Generates attack vectors (static or AI-driven).
+
+3. **AI/Attack Vector Module**:
+   - Analyzes devices based on vulnerability data and suggests attack vectors.
+   - Future integration will enhance AI capabilities to provide more sophisticated attack strategies.
+
+## Data Flow:
+1. **Port Map and Devices**:
+   - Devices are loaded and stored in memory from `data.json` or fetched from Shodan.
+   - Each device’s RAG status is dynamically calculated based on its `vuln_score`.
+   
+2. **Attack Vector Analysis**:
+   - Once the devices are mapped, the user can trigger an attack vector analysis.
+   - The backend identifies the most vulnerable devices and suggests potential attack strategies.
+
+3. **Ship Arrival Simulation**:
+   - New IoT devices are added when a simulated ship arrives.
+   - The system recalculates the vulnerability status of the port.
+
+## Technologies Used:
+- **Streamlit**: For the frontend UI and interactions.
+- **Python**: Backend logic and processing.
+- **Shodan API**: Future integration for real-time data.
+- **AI (Optional)**: For generating attack vectors and sophisticated analysis.
+
+## Deployment Architecture:
+- **Local Deployment**: Initially run the app on local machines.
+- **Cloud Deployment** (Future): Deploy on platforms like AWS, Azure, or GCP for scalability and real-time updates.
+
+## Security Considerations:
+- Ensure the data is securely handled, especially when integrating real-time data from Shodan.
+- Implement access controls and authentication for sensitive features (e.g., attack vector analysis).
