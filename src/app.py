@@ -16,8 +16,82 @@ from src.models.attack_vector_analyzer import AttackVectorAnalyzer
 st.set_page_config(
     page_title="Maritime Port Digital Twin",
     page_icon="🚢",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
+
+# Apply dark theme CSS
+st.markdown("""
+<style>
+    /* Dark mode for the entire app */
+    .stApp {
+        background-color: #0e1117;
+        color: #ffffff;
+    }
+    
+    /* Dark mode for sidebar */
+    .css-1d391kg, .css-1lcbmhc {
+        background-color: #262730;
+    }
+    
+    /* Dark mode for widgets */
+    .stButton>button, .stTextInput>div>div>input, .stSelectbox>div>div>select {
+        background-color: #262730;
+        color: white;
+        border-color: #4e4e4e;
+    }
+    
+    /* Dark mode for expanders */
+    .streamlit-expanderHeader {
+        background-color: #262730;
+        color: white;
+    }
+    
+    /* Dark mode for the folium map container */
+    .folium-map {
+        background-color: #0e1117 !important;
+    }
+    
+    /* Remove white space around the map */
+    .leaflet-container {
+        background-color: #0e1117 !important;
+        border: none !important;
+    }
+    
+    /* Dark theme for map controls */
+    .leaflet-control-zoom, .leaflet-control-layers {
+        background-color: #262730 !important;
+        border-color: #4e4e4e !important;
+    }
+    
+    .leaflet-control-zoom a, .leaflet-control-layers a {
+        color: #ffffff !important;
+        background-color: #262730 !important;
+    }
+    
+    /* Remove any white borders */
+    .leaflet-container .leaflet-overlay-pane svg, 
+    .leaflet-container .leaflet-marker-pane img, 
+    .leaflet-container .leaflet-shadow-pane img, 
+    .leaflet-container .leaflet-tile-pane img, 
+    .leaflet-container img.leaflet-image-layer {
+        background-color: transparent !important;
+        border: none !important;
+    }
+    
+    /* Make the map fill the available space */
+    .element-container:has(.folium-map) {
+        width: 100% !important;
+    }
+    
+    /* Dark theme for map popups */
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+        background-color: #262730 !important;
+        color: white !important;
+        border: none !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Set a default OpenAI API key for demonstration
 # In production, this should be set via environment variables
@@ -54,15 +128,20 @@ def get_status_color(status):
 
 def create_port_map(devices):
     """Create folium map with IoT devices."""
-    # Create a map centered on an example maritime port
+    # Create a map centered on an example maritime port with dark theme
     # San Diego port coordinates as an example
-    m = folium.Map(location=[32.7157, -117.1611], zoom_start=15)
+    m = folium.Map(
+        location=[32.7157, -117.1611], 
+        zoom_start=15,
+        tiles="CartoDB dark_matter",  # Use dark tiles
+        attr="CartoDB"
+    )
     
-    # Add background satellite imagery
+    # Add dark satellite imagery
     folium.TileLayer(
         tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         attr='Esri',
-        name='Satellite',
+        name='Dark Satellite',
         overlay=False,
         control=True
     ).add_to(m)
@@ -81,10 +160,12 @@ def create_port_map(devices):
         folium.Marker(
             [norm_lat, norm_lng],
             popup=f"""
-            <b>{device.get('name', 'Unknown')}</b><br>
-            Type: {device.get('device_type', 'Unknown')}<br>
-            Vulnerability Score: {device.get('vuln_score', 0)}<br>
-            Status: {status}
+            <div style="background-color: #262730; color: white; padding: 5px; border-radius: 3px;">
+                <b>{device.get('name', 'Unknown')}</b><br>
+                Type: {device.get('device_type', 'Unknown')}<br>
+                Vulnerability Score: {device.get('vuln_score', 0)}<br>
+                Status: {status}
+            </div>
             """,
             tooltip=device.get("name", "Device"),
             icon=folium.Icon(color=color, icon="server", prefix="fa")
@@ -108,6 +189,7 @@ def main():
         st.subheader("Port Map")
         if devices:
             port_map = create_port_map(devices)
+            # Use the full width available and add custom CSS for the map
             folium_static(port_map, width=800)
         else:
             st.info("No device data available for map visualization")
@@ -181,4 +263,4 @@ def main():
             st.info("Ship arrival simulation will be implemented by frontend team")
 
 if __name__ == "__main__":
-    main() 
+    main()
