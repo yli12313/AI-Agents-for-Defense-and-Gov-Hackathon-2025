@@ -14,7 +14,8 @@ except ImportError:
 # For demo purposes, we'll use a placeholder
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 if OPENAI_AVAILABLE and OPENAI_API_KEY:
-    openai.api_key = OPENAI_API_KEY
+    # Initialize the OpenAI client with the API key
+    client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 def generate_attack_vector_with_ai(devices: List[Dict[str, Any]]) -> str:
     """
@@ -65,8 +66,8 @@ Format your response with markdown headers and bullet points for readability.
 """
     
     try:
-        # Call OpenAI API
-        response = openai.ChatCompletion.create(
+        # Use the new OpenAI API syntax (v1.0+)
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",  # or "gpt-4" for better quality
             messages=[
                 {"role": "system", "content": "You are a cybersecurity expert specializing in maritime infrastructure security."},
@@ -76,7 +77,7 @@ Format your response with markdown headers and bullet points for readability.
             temperature=0.7
         )
         
-        # Extract the response text
+        # Extract the response text (new API response format)
         attack_vector = response.choices[0].message.content
         return attack_vector
     
