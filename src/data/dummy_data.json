@@ -4,27 +4,47 @@
         "device_type": "PLC",
         "location": [0.3, 0.6],
         "vuln_score": 8.2,
-        "cves": ["CVE-2022-1234", "CVE-2023-5678"]
+        "cves": ["CVE-2022-1234", "CVE-2023-5678"],
+        "description": "Control system for main loading crane"
     },
     {
         "name": "Camera_System_1",
         "device_type": "Camera",
         "location": [0.5, 0.4],
         "vuln_score": 5.7,
-        "cves": ["CVE-2023-9012"]
+        "cves": ["CVE-2023-9012"],
+        "description": "Security camera monitoring the main entrance"
     },
     {
         "name": "Gate_Control_1",
         "device_type": "Access Control",
         "location": [0.2, 0.3],
         "vuln_score": 2.1,
-        "cves": []
+        "cves": [],
+        "description": "Access control system for the main gate"
     },
     {
         "name": "Weather_Station_1",
         "device_type": "Sensor",
         "location": [0.7, 0.8],
         "vuln_score": 3.4,
-        "cves": ["CVE-2023-3456"]
+        "cves": ["CVE-2023-3456"],
+        "description": "Weather monitoring station"
+    },
+    {
+        "name": "Network_Switch_1",
+        "device_type": "Network",
+        "location": [0.4, 0.5],
+        "vuln_score": 7.5,
+        "cves": ["CVE-2023-2345", "CVE-2022-8901"],
+        "description": "Main network switch connecting operational devices"
+    },
+    {
+        "name": "SCADA_Control_1",
+        "device_type": "Control System",
+        "location": [0.6, 0.3],
+        "vuln_score": 9.1,
+        "cves": ["CVE-2022-7654", "CVE-2023-1122", "CVE-2023-8844"],
+        "description": "SCADA system controlling port operations"
     }
 ] 

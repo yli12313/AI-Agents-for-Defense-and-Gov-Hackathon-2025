@@ -4,6 +4,13 @@ from pathlib import Path
 import folium
 from streamlit_folium import folium_static
 import numpy as np
+import os
+import sys
+
+# Add the current directory to the Python path to make imports work
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__) + '/..'))
+
+from src.models.attack_vector_analyzer import AttackVectorAnalyzer
 
 # Set page config
 st.set_page_config(
@@ -11,6 +18,15 @@ st.set_page_config(
     page_icon="🚢",
     layout="wide"
 )
+
+# Set a default OpenAI API key for demonstration
+# In production, this should be set via environment variables
+if "OPENAI_API_KEY" not in os.environ:
+    # Try to get from secrets, but handle the case when no secrets file exists
+    try:
+        os.environ["OPENAI_API_KEY"] = st.secrets.get("OPENAI_API_KEY", "")
+    except Exception:
+        os.environ["OPENAI_API_KEY"] = ""  # Set to empty string if no secrets found
 
 def load_dummy_data():
     """Load dummy IoT device data from JSON file."""
@@ -76,48 +92,14 @@ def create_port_map(devices):
     
     return m
 
-def generate_attack_vector(devices):
-    """Generate a basic attack vector based on device vulnerabilities."""
-    if not devices:
-        return "No devices available for attack vector analysis."
-    
-    # Sort devices by vulnerability score in descending order
-    vulnerable_devices = sorted(devices, key=lambda x: x.get("vuln_score", 0), reverse=True)
-    
-    # If any device has a high vulnerability score (RED status)
-    high_vuln_devices = [d for d in vulnerable_devices if d.get("vuln_score", 0) >= 7]
-    if high_vuln_devices:
-        entry_point = high_vuln_devices[0]
-        
-        # Find other vulnerable devices for lateral movement
-        lateral_targets = [d for d in vulnerable_devices if d != entry_point and d.get("vuln_score", 0) >= 4]
-        
-        attack_vector = f"""
-        ### Potential Attack Path
-
-        1. **Entry Point**: {entry_point.get('name', 'Unknown Device')} ({entry_point.get('device_type', 'Unknown')})
-           - Vulnerability Score: {entry_point.get('vuln_score', 0)}
-           - CVEs: {', '.join(entry_point.get('cves', ['None']))}
-        
-        2. **Attack Strategy**:
-           - Exploit vulnerabilities in {entry_point.get('name', 'entry point')} to gain initial access
-        """
-        
-        if lateral_targets:
-            attack_vector += "\n3. **Lateral Movement Targets**:"
-            for i, target in enumerate(lateral_targets[:3]):
-                attack_vector += f"""
-           - {target.get('name', 'Unknown')} ({target.get('device_type', 'Unknown')}) - Vuln Score: {target.get('vuln_score', 0)}"""
-        
-        return attack_vector
-    else:
-        return "No high-vulnerability devices detected. Focus on hardening medium vulnerability devices."
-
 def main():
     st.title("Maritime Port Digital Twin")
     
     # Load dummy data
     devices = load_dummy_data()
+    
+    # Initialize the attack vector analyzer
+    analyzer = AttackVectorAnalyzer(devices)
     
     # Create two columns for layout
     col1, col2 = st.columns([2, 1])
@@ -130,12 +112,47 @@ def main():
         else:
             st.info("No device data available for map visualization")
         
-        # Attack vector analysis section
-        st.subheader("Attack Vector Analysis")
+        # Advanced Attack vector analysis section
+        st.subheader("AI-Enhanced Attack Vector Analysis")
+        
+        use_ai = st.checkbox("Use AI for enhanced analysis", value=True)
+        
         if st.button("Generate Attack Vector Analysis"):
             with st.spinner("Analyzing potential attack vectors..."):
-                attack_vector = generate_attack_vector(devices)
-                st.markdown(attack_vector)
+                # Check if OpenAI API key is available
+                if use_ai and not os.environ.get("OPENAI_API_KEY"):
+                    st.warning("No OpenAI API key found. Using rule-based analysis instead.")
+                    use_ai = False
+                
+                # Perform the analysis
+                analysis_result = analyzer.analyze(use_ai=use_ai)
+                
+                if analysis_result["success"]:
+                    # Display risk score with gauge
+                    risk_score = analysis_result["risk_score"]
+                    st.markdown(f"### Overall Risk Score: {risk_score}/10")
+                    
+                    # Create a simple gauge visualization
+                    risk_color = "green" if risk_score < 4 else "orange" if risk_score < 7 else "red"
+                    st.progress(risk_score / 10)
+                    
+                    # Display statistics
+                    stats_col1, stats_col2 = st.columns(2)
+                    with stats_col1:
+                        st.metric("High Vulnerability Devices", analysis_result["high_vuln_count"])
+                    with stats_col2:
+                        st.metric("Average Vulnerability Score", analysis_result["avg_vuln_score"])
+                    
+                    # Display attack vector
+                    st.markdown("## Attack Vector Analysis")
+                    st.markdown(analysis_result["attack_vector"])
+                    
+                    # Option to save analysis
+                    if st.button("Save Analysis"):
+                        output_path = analyzer.save_analysis(analysis_result)
+                        st.success(f"Analysis saved to {output_path}")
+                else:
+                    st.error(f"Analysis failed: {analysis_result['error']}")
     
     with col2:
         st.subheader("Device List")

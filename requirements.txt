@@ -4,4 +4,4 @@ numpy==1.26.4
 folium==0.15.1
 python-dotenv==1.0.1
 streamlit-folium==0.24.0
-pytest==8.0.2 
+pytest==8.0.2 openai==1.69.0
